@@ -2,17 +2,18 @@ import express, { Request, Response } from "express";
 import cors from "cors";
 import multer from "multer";
 import fs from "fs";
+import csv from "csvtojson";
 
 const app = express();
 const port = 5000;
 
 const storage = multer.diskStorage({
-  destination: (req: Request, file: any, cb) => {
+  destination: (req: Request, file: Express.Multer.File, cb) => {
     cb(null, "./src/uploads/");
     req.body.file = file;
     console.log(file);
   },
-  filename: (req: Request, file, cb) => {
+  filename: (req: Request, file: Express.Multer.File, cb) => {
     cb(null, file.originalname);
     req.body.file = file;
   },
@@ -50,6 +51,18 @@ app.get("/read", upload.single("file"), (req: Request, res: Response) => {
     res.status(200).send({ message: "File read successfully" });
   }
 });
-app.listen(port, () => {
-  console.log(`Example app listening at http://localhost:${port}`);
+
+app.get("/convert", (req: Request, res: Response) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  const { id } = req.query;
+  csv()
+    .fromFile(`./src/uploads/upload-${id}.csv`)
+    .then((jsonObj: any) => {
+      res.status(200).send(jsonObj);
+      fs.writeFileSync(
+        `./src/uploads/upload-${id}.json`,
+        JSON.stringify(jsonObj)
+      );
+    });
 });
+app.listen(port, () => console.log(`API listening at ${port}`));
